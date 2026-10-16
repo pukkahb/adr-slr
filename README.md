@@ -5,8 +5,8 @@ Python pipeline and extracted dataset underlying the systematic review
 The code reproduces every figure, table, and descriptive statistic reported in the manuscript
 from the extracted study-level dataset (77 included studies).
 
-> **Citation:** [Temitayo Ogundimu, Emmanuella Matumamboh, Jerry Emmanuel, Jelili Oyelade]. Genomic and Computational Approaches to Antimalarial Drug Resistance:
-> A Systematic Review. [BMC Medical Genomics, 2026].
+> **Citation:** Temitayo Ogundimu, Emmanuella Matumamboh, Jerry Emmanuel, Jelili Oyelade. Genomic and Computational Approaches to Antimalarial Drug Resistance:
+> A Systematic Review. [In Review Stage, 2026].
 
 ## What this repository does
 
@@ -17,8 +17,8 @@ from the extracted study-level dataset (77 included studies).
   treemap, reproducibility indicators, region-stratified proportions, etc.)
 - Reports region-stratified methodological/reproducibility indicators as descriptive proportions with
   95% Wilson confidence intervals (no pooling)
-- Runs supplementary checks: chi-squared tests across region strata, a binary geographic-classification
-  sensitivity analysis, and a machine-learning-definition sensitivity analysis
+- Runs supplementary checks: chi-squared tests across region strata, a binary geographic classification
+  sensitivity analysis, and a machine-learning definition of sensitivity analysis
 
 ## Repository structure
 
@@ -66,11 +66,11 @@ pip install -r requirements.txt
    ```bash
    python3 scripts/tables_export.py
    ```
-   This also runs `sensitivity_analysis.py`, so every number cited in the manuscript for the chi-squared
-   and sensitivity analyses is regenerated and written to CSV.
+   This also runs `sensitivity_analysis.py`, so that the chi-squared
+   and sensitivity analyses are generated and written to CSV.
 
-The country boundary file used for the map is downloaded automatically on first run
-(Natural Earth, 110m). If there is no internet access, the map is skipped and all other outputs are unaffected.
+The country boundary file used for the map is downloaded automatically on the first run
+(Natural Earth, 110m). If there is no internet access, the map is skipped, and all other outputs are unaffected.
 
 ## Key classification rules (documented in `scripts/clean.py`)
 
@@ -88,7 +88,7 @@ The country boundary file used for the map is downloaded automatically on first 
 
 `data/adr.csv` contains one row per included study (77 rows). Fields cover study
 characteristics, species, drugs, genes, detection and analysis methods, software, machine-learning use,
-and data/code/pipeline availability. Free-text fields are as extracted and are normalised by `clean.py`.
+and data/code/pipeline availability. Free-text fields are extracted and normalised by `clean.py`.
 
 ## License
 
@@ -97,4 +97,4 @@ Code is released under the [MIT License](LICENSE). The extracted dataset in `dat
 
 ## Contact
 
-[Name, affiliation, email]
+Temitayo Ogundimu, Covenant University Bioinformatics Research [temitayo.ogundimupgs@stu.cu.edu.ng].

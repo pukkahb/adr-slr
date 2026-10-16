@@ -3,7 +3,7 @@ from collections import Counter
 from config import TAB_DIR
 from clean import load_clean
 
-df = pd.read_pickle('/home/claude/adrr_analysis/df_clean.pkl')
+df = pd.read_pickle('/data/df_clean.pkl')
 OUT = TAB_DIR
 
 def pct(n, N=77):
@@ -48,5 +48,6 @@ counter_to_df(A.software_counter, 'Software/tool').to_csv(f'{OUT}/table_software
 counter_to_df(A.ml_model_counter, 'ML model (predictive only)').to_csv(f'{OUT}/table_ml_models.csv', index=False)
 
 print('Tables exported to', OUT)
+import sensitivity_analysis
 import os
 print(sorted(os.listdir(OUT)))

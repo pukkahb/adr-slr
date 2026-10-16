@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from config import DPI, FIG_DIR, VIRIDIS
 
-WORLD_GEOJSON = '/users/chiomab/adr/world.geojson'
+WORLD_GEOJSON = '~/adr/world.geojson'
 
 COUNTRY_ISO3 = {
     'Bangladesh': 'BGD', 'Brazil': 'BRA', 'Cambodia': 'KHM', 'Cameroon': 'CMR',

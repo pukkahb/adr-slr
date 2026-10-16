@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 DPI = 1200
-FIG_DIR = '/users/chiomab/adr/figures'
-TAB_DIR = '/users/chiomab/adr/tables'
+FIG_DIR = '/figures'
+TAB_DIR = '/tables'
 ANNOTATE_DEFAULT = False
 
 VIRIDIS = plt.cm.viridis

@@ -34,20 +34,20 @@ results = {'N': N}
 # =====================================================================
 # LAYER 1: DESCRIPTIVE & BIBLIOMETRIC
 # =====================================================================
-# --- 1.1 Publication trend ---
+
 yr_counts = df['pub_year'].value_counts().sort_index()
 line_trend(yr_counts.index.astype(int), yr_counts.values, 'fig01_year_trend.png',
            xlabel='Publication Year', ylabel='Number of Studies', cumulative=True)
 results['year_range'] = (int(df['pub_year'].min()), int(df['pub_year'].max()))
 results['peak_year'] = (int(yr_counts.idxmax()), int(yr_counts.max()))
 
-# --- 1.2 Top journals ---
+# ------------------------------------------------------------------------------------------ #
 journal_counts = df['journal'].value_counts()
 hbar(list(journal_counts.items()), 'fig02_top_journals.png', top=10)
 results['n_journals'] = df['journal'].nunique()
 results['top_journal'] = journal_counts.index[0], int(journal_counts.iloc[0])
 
-# --- 1.3 + 1.4 map ---
+# ------------------------------------------------------------------------------------------ #
 map_fname = make_map(df, 'fig03_map_choropleth.png')
 macro_counts = counter_from_lists(df['macro_region_list'])
 africa_n = df['is_africa'].sum()
@@ -56,13 +56,41 @@ results['africa_pct'] = round(100*africa_n/N, 1)
 results['lead_africa_n'] = int(df['lead_is_africa'].sum())
 results['lead_africa_pct'] = round(100*df['lead_is_africa'].sum()/N, 1)
 
-# --- 1.5 chord ---
+# ------------------------------------------------------------------------------------------ #
 chord_fname, chord_matrix = make_chord(df, 'fig04_chord_collaboration.png')
 chord_matrix.to_csv(f'{TAB_DIR}/table_chord_matrix.csv')
 
+# ------------------------------------------------------------------------------------------ #
+def design_bucket(label):
+    l = label.lower()
+    if 'surveillance' in l: return 'Surveillance (field / epidemiology)'
+    if 'computational-only' in l or 'in silico' in l: return 'Computational-only (in silico)'
+    if 'methodology' in l: return 'Methodology / pipeline development'
+    if 'experimental' in l or 'laboratory' in l or 'in vitro' in l: return 'Experimental / laboratory (in vitro-ex vivo)'
+    if 'cross-sectional' in l: return 'Cross-sectional / molecular epidemiology'
+    if 'randomized' in l: return 'Randomized controlled trial'
+    if 'population genomics' in l: return 'Population genomics'
+    if 'retrospective' in l or 'historical' in l or 'paleogenomic' in l: return 'Retrospective / historical genomic study'
+    if 'mathematical modeling' in l or 'computational modelling' in l or 'computational biology' in l: return 'Mathematical / computational modelling'
+    return 'Other'
+design_bucketed = Counter()
+for lst in df['study_design_list']:
+    seen = set(design_bucket(x) for x in lst) if lst else {'Not reported'}
+    for b in seen:
+        design_bucketed[b] += 1
+
+mc_counts = df['multi_country_clean'].value_counts()
+results['multicountry_yes_pct'] = round(100*mc_counts.get('Yes',0)/N,1)
+
+# ------------------------------------------------------------------------------------------ #
+results['n_methodology_only'] = int(df['is_methodology_only'].sum())
+results['n_hmm_dcifer_cite'] = int(df['software_list'].apply(
+    lambda lst: any(t.lower() in ('hmmibd','dcifer','moire','real mccoil','the real mccoil')
+                     for t in [x.lower() for x in lst])).sum())
 # =====================================================================
 # LAYER 2: GENOMIC & BIOLOGICAL
 # =====================================================================
+
 species_counter = counter_from_lists(df['species_list'])
 def species_bucket(s):
     s = s.lower()
@@ -84,13 +112,132 @@ donut(species_bucketed.most_common(), 'fig05_species.png', legend_title='Plasmod
 results['pf_pct'] = round(100*species_bucketed.get('P. falciparum',0)/N,1)
 results['pv_pct'] = round(100*species_bucketed.get('P. vivax',0)/N,1)
 
+gene_counter = counter_from_lists(df['gene_list'])
+drug_counter = counter_from_lists(df['drug_list'])
+
 drugclass_counter = counter_from_lists(df['drug_class_list'])
 donut(drugclass_counter.most_common(), 'fig06_drug_class.png', top=5, legend_title='Drug Class')
 
+# ------------------------------------------------------------------------------------------ #
+def detect_bucket(label):
+    l = label.lower()
+    if 'whole-genome' in l or 'wgs' in l: return 'Whole-genome sequencing (WGS)'
+    if 'sanger' in l: return 'Sanger sequencing'
+    if 'nanopore' in l or 'ont' in l: return 'Nanopore sequencing'
+    if 'illumina' in l or 'miseq' in l or 'novaseq' in l: return None  # folded into scope elsewhere
+    if 'amplicon' in l or 'ampseq' in l: return 'Targeted amplicon sequencing'
+    if 'rflp' in l: return 'PCR-RFLP'
+    if 'pcr' in l and 'nested' in l: return 'Nested PCR'
+    if 'qpcr' in l or 'rt-qpcr' in l: return 'qPCR / RT-qPCR'
+    if 'microscopy' in l: return 'Microscopy'
+    if 'single-cell' in l or 'scrna' in l: return 'Single-cell sequencing'
+    if 'microarray' in l: return 'Microarray'
+    return label
+
+def classify_detection(tok_list):
+    joined = ' ; '.join(tok_list).lower()
+    buckets = set()
+    scope_found = False
+    for t in tok_list:
+        l = t.lower()
+        if 'whole-genome' in l or 'wgs' in l or 'whole genome amplification' in l:
+            buckets.add('Whole-genome sequencing (WGS)'); scope_found = True
+        elif 'amplicon' in l or 'ampseq' in l or 'molecular inversion probes' in l or 'mips' in l:
+            buckets.add('Targeted amplicon sequencing'); scope_found = True
+        elif 'sanger' in l:
+            buckets.add('Sanger sequencing (single-locus)'); scope_found = True
+        elif 'rflp' in l:
+            buckets.add('PCR-RFLP'); scope_found = True
+        elif 'nested' in l and 'pcr' in l:
+            buckets.add('Nested PCR'); scope_found = True
+        elif 'qpcr' in l or 'rt-qpcr' in l:
+            buckets.add('qPCR / RT-qPCR'); scope_found = True
+        elif 'microscopy' in l:
+            buckets.add('Microscopy'); scope_found = True
+        elif 'single-cell' in l or 'scrna' in l:
+            buckets.add('Single-cell sequencing'); scope_found = True
+        elif 'microarray' in l:
+            buckets.add('Microarray'); scope_found = True
+        elif 'nanopore' in l or 'ont' in l:
+            buckets.add('Nanopore sequencing'); scope_found = True
+        elif 'illumina' in l or 'miseq' in l or 'novaseq' in l or 'hiseq' in l or 'nextseq' in l:
+            pass
+        else:
+            buckets.add(t)
+    if not scope_found and ('illumina' in joined or 'miseq' in joined or 'novaseq' in joined):
+        buckets.add('Illumina sequencing (scope not specified)')
+    return buckets
+
+detect_bucketed = Counter()
+for lst in df['detection_list']:
+    seen = classify_detection(lst) if lst else set()
+    for b in seen:
+        detect_bucketed[b] += 1
+
+feature_counter = counter_from_lists(df['feature_list'])
+def feat_bucket(l):
+    ll = l.lower()
+    if 'snp' in ll: return 'SNPs'
+    if 'haplotype' in ll and 'micro' not in ll: return 'Haplotypes'
+    if 'microhaplotype' in ll: return 'Microhaplotypes'
+    if 'cnv' in ll or 'copy number' in ll: return 'Copy number variants (CNVs)'
+    if 'genomic region' in ll: return 'Genomic regions'
+    if 'gene-level' in ll: return 'Gene-level features'
+    return l
+feat_bucketed = Counter()
+for lst in df['feature_list']:
+    seen = set(feat_bucket(x) for x in lst) if lst else set()
+    for b in seen:
+        feat_bucketed[b] += 1
 # =====================================================================
 # LAYER 3: COMPUTATIONAL & MODELLING
 # =====================================================================
-# --- 3.1 ML usage: RECLASSIFIED per explicit predictive-model rule (see clean.py) ---
+def cat_bucket(l):
+    ll = l.lower()
+    if 'genomic surveillance' in ll: return 'Genomic surveillance'
+    if 'population genomics' in ll: return 'Population genomics'
+    if 'machine learning' in ll: return 'Machine learning'
+    if 'computational modelling' in ll: return 'Computational modelling'
+    if 'candidate gene' in ll: return 'Candidate gene study'
+    if 'methodology' in ll or 'pipeline' in ll: return 'Methodology / pipeline development'
+    if 'clinical trial' in ll: return 'Clinical trial'
+    if 'paleogenomics' in ll: return 'Paleogenomics'
+    if 'transcriptomic' in ll: return 'Transcriptomics'
+    if 'molecular epidemiology' in ll: return 'Molecular epidemiology'
+    if 'mixed' in ll: return 'Mixed / multi-category'
+    return 'Other'
+cat_bucketed = Counter()
+for lst in df['study_category_list']:
+    seen = set(cat_bucket(x) for x in lst) if lst else set()
+    for b in seen:
+        cat_bucketed[b] += 1
+
+# ------------------------------------------------------------------------------------------ #
+def analysis_bucket(l):
+    ll = l.lower()
+    if 'neighbor-joining' in ll or 'neighbour-joining' in ll or 'neighbor joining' in ll:
+        return 'Tree-based clustering (e.g. neighbour-joining)'
+    if 'phylogenetic' in ll:
+        return 'Model-based phylogenetic analysis'
+    if 'haplotype analysis' in ll: return 'Haplotype analysis'
+    if 'allele frequency' in ll: return 'Allele frequency analysis'
+    if 'machine learning' in ll: return 'Machine learning'
+    if 'regression' in ll: return 'Regression modelling'
+    if 'population differentiation' in ll or 'fst' in ll: return 'Population differentiation (Fst)'
+    if 'selection scan' in ll or 'ihs' in ll: return 'Selection scans'
+    if 'neutrality test' in ll: return 'Neutrality tests'
+    if 'relatedness' in ll or 'ibd' in ll: return 'Relatedness / IBD analysis'
+    if 'moi' in ll or 'multiplicity' in ll: return 'Multiplicity of infection (MOI)'
+    if 'descriptive statistics' in ll: return 'Descriptive statistics'
+    if 'gwas' in ll: return 'GWAS'
+    return l
+analysis_bucketed = Counter()
+for lst in df['analysis_list']:
+    seen = set(analysis_bucket(x) for x in lst) if lst else set()
+    for b in seen:
+        analysis_bucketed[b] += 1
+
+# ------------------------------------------------------------------------------------------ #
 ml_model_counter = counter_from_lists(df[df['ml_used_clean']=='Yes']['ml_model_list'])
 
 df['period'] = pd.cut(df['pub_year'], bins=[2000,2015,2020,2023,2027],
@@ -99,7 +246,18 @@ ml_by_period = df.groupby('period', observed=True)['ml_used_clean'].apply(lambda
 line_trend(ml_by_period.index.astype(str), ml_by_period.values, 'fig07_ml_trend.png',
            xlabel='Publication Period', ylabel='% of Studies Using ML', cumulative=False)
 
-# --- 3.2 Reproducibility: pipeline_clean is RE-DERIVED (see clean.py) ---
+CANON_TOOL = {}
+raw_counter = counter_from_lists(df['software_list'])
+merged_counter = Counter()
+for tool, cnt in raw_counter.items():
+    key = re.sub(r'\s+v?\d[\d.]*$', '', tool).strip().lower()
+    if key not in CANON_TOOL:
+        CANON_TOOL[key] = tool
+    merged_counter[CANON_TOOL[key]] += cnt
+software_counter = merged_counter
+results['n_unique_tools'] = len(software_counter)
+
+# ------------------------------------------------------------------------------------------ #
 repro_df = pd.DataFrame({
     'Raw data available': df['raw_data_clean'].value_counts(),
     'Code available': df['code_clean'].value_counts(),
@@ -160,3 +318,4 @@ print(results)
 
 df.to_pickle('/users/chiomab/adr/data/df_clean.pkl')
 df.to_csv('/users/chiomab/adr/tables/adr_cleaned.csv')
+

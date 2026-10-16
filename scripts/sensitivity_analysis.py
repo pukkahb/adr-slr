@@ -15,9 +15,9 @@ import pandas as pd
 from scipy import stats
 from descriptive_proportions import wilson_ci
 
-TAB_DIR = '/users/chiomab/adr/tables'
+TAB_DIR = '~/adr/tables'
 
-df = pd.read_pickle('/users/chiomab/adr/data/df_clean.pkl')
+df = pd.read_pickle('~/adr/data/df_clean.pkl')
  
 def region_group_3way(row):
     if row['is_africa']:

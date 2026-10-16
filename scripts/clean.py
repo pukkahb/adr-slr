@@ -296,7 +296,7 @@ def load_clean(path):
     return df
 
 if __name__ == '__main__':
-    df = load_clean('/users/chiomab/adr/data/adr.csv')
+    df = load_clean('/data/adr.csv')
     print('N =', len(df))
     print('ML yes (reclassified):', (df['ml_used_clean']=='Yes').sum(), '/ raw Yes was:',
           (df['ml_used'].astype(str).str.lower().str.startswith('yes')).sum())
