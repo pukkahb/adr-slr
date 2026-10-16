@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Generated intermediates (by scripts/analysis.py)
+*.pkl
+
+# Optional: uncomment to keep the repo light and track code only
+figures/*.png
+tables/*.csv
